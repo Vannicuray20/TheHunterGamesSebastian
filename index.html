@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE HUNTER GAMES · SEBASTIAN #017</title>
+  <meta name="description" content="Una experiencia cinematográfica de juegos diseñada para Sebastian, Participante #017.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&family=Marcellus&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230a0a14' stroke='%23d4af37' stroke-width='4'/%3E%3Ctext x='50' y='68' font-size='46' text-anchor='middle' fill='%23d4af37' font-family='Georgia'%3E017%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <canvas id="fx-canvas" class="fx-canvas" aria-hidden="true"></canvas>
+  <div id="vignette" class="vignette" aria-hidden="true"></div>
+
+  <div id="sound-fab" class="sound-fab" title="Activar / desactivar sonido">
+    <span id="sound-icon" class="sound-icon">♪</span>
+  </div>
+
+  <div id="corner-tag" class="corner-tag">S·017</div>
+
+  <!-- ============ SCREEN: HOME ============ -->
+  <section id="screen-home" class="screen is-active">
+    <div class="home-glow"></div>
+    <div class="home-inner">
+      <p class="home-eyebrow reveal">EL COMITÉ CENTRAL PRESENTA</p>
+      <h1 class="home-title reveal">
+        <span class="th-line">THE HUNTER</span>
+        <span class="th-main">GAMES</span>
+      </h1>
+      <p class="home-tagline reveal">donde solo uno prevalece</p>
+      <div class="home-welcome reveal">
+        <p class="home-welcome-line">BIENVENIDO, SEBASTIAN</p>
+      </div>
+      <div class="home-return-msg reveal" id="home-return-msg" hidden></div>
+      <p class="home-sub reveal">Los Juegos están a punto de comenzar.</p>
+
+      <div class="home-menu reveal">
+        <button class="btn btn-primary btn-lg" id="btn-iniciar">
+          <span class="btn-triangle">▶</span> INICIAR LOS JUEGOS
+        </button>
+        <button class="btn btn-ghost" id="btn-continuar">CONTINUAR PARTIDA</button>
+        <button class="btn btn-ghost" id="btn-expediente-home">MI EXPEDIENTE</button>
+        <button class="btn btn-ghost" id="btn-diplomas-home">DIPLOMAS</button>
+        <button class="btn btn-ghost" id="btn-howto-home">CÓMO JUGAR</button>
+        <button class="btn btn-ghost" id="btn-playlist-home">MÚSICA Y PLAYLIST</button>
+      </div>
+
+      <p class="home-number">PARTICIPANTE #017</p>
+      <footer class="credit reveal">Creado por <span class="credit-sign">Vannia Curay</span></footer>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: IDENTITY ============ -->
+  <section id="screen-identity" class="screen">
+    <div class="cinemaline"></div>
+    <div class="seq-wrap">
+      <div class="seq-block" id="seq-id-block"></div>
+      <div class="seq-continue" id="seq-id-continue" hidden>
+        <button class="btn btn-primary" id="btn-id-continue">CONTINUAR</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: PRESENTACION ============ -->
+  <section id="screen-presentacion" class="screen">
+    <div class="seq-wrap">
+      <div class="seq-block" id="seq-pres-block"></div>
+      <div class="seq-continue" id="seq-pres-continue" hidden>
+        <button class="btn btn-primary btn-lg" id="btn-enter-arena">ENTRAR A LA ARENA</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: ARENA (hub) ============ -->
+  <section id="screen-arena" class="screen">
+    <header class="topbar">
+      <div class="topbar-id">
+        <span class="topbar-code">S·017</span>
+        <span class="topbar-name">SEBASTIAN</span>
+      </div>
+      <div class="topbar-meta">
+        <span class="topbar-rank" id="arena-rank">PARTICIPANTE</span>
+        <span class="topbar-pts" id="arena-pts">0 PTOS</span>
+      </div>
+    </header>
+
+    <div class="hub-wrap">
+      <h2 class="hub-title">LA ARENA</h2>
+      <p class="hub-sub">Elige tu desafío, Participante #017. Cada victoria forja tu leyenda.</p>
+
+      <div class="hub-nav">
+        <button class="btn btn-ghost btn-sm" id="btn-expe-arena">EXPEDIENTE</button>
+        <button class="btn btn-ghost btn-sm" id="btn-fame-arena">SALÓN DE LA FAMA</button>
+        <button class="btn btn-ghost btn-sm" id="btn-dip-arena">DIPLOMAS</button>
+        <button class="btn btn-ghost btn-sm" id="btn-howto-arena">CÓMO JUGAR</button>
+        <button class="btn btn-ghost btn-sm" id="btn-playlist-arena">PLAYLIST</button>
+        <button class="btn btn-ghost btn-sm" id="btn-home-arena">INICIO</button>
+      </div>
+
+      <div class="game-grid" id="game-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: EXPEDIENTE ============ -->
+  <section id="screen-expediente" class="screen">
+    <div class="hub-wrap">
+      <div class="screen-head">
+        <h2 class="hub-title">EXPEDIENTE <span class="gold">#017</span></h2>
+        <button class="btn btn-ghost btn-sm" id="btn-expe-back">VOLVER</button>
+      </div>
+
+      <div class="file-card" id="file-card"></div>
+
+      <div class="file-section">
+        <h3 class="file-section-title">ESTADÍSTICAS DE PARTICIPANTE</h3>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+
+      <div class="file-section">
+        <h3 class="file-section-title">PROGRESIÓN DE RANGOS</h3>
+        <div class="rank-track" id="rank-track"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: SALON DE LA FAMA ============ -->
+  <section id="screen-fame" class="screen">
+    <div class="hub-wrap">
+      <div class="screen-head">
+        <h2 class="hub-title">SALÓN DE LA FAMA</h2>
+        <button class="btn btn-ghost btn-sm" id="btn-fame-back">VOLVER</button>
+      </div>
+      <div id="fame-card"></div>
+      <div class="fame-medals" id="fame-medals"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: DIPLOMAS / GALERIA ============ -->
+  <section id="screen-diplomas" class="screen">
+    <div class="hub-wrap">
+      <div class="screen-head">
+        <h2 class="hub-title">GALERÍA DE VICTORIAS</h2>
+        <button class="btn btn-ghost btn-sm" id="btn-dip-back">VOLVER</button>
+      </div>
+      <div class="diploma-grid" id="diploma-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: COMO JUGAR ============ -->
+  <section id="screen-howto" class="screen">
+    <div class="hub-wrap">
+      <div class="screen-head">
+        <h2 class="hub-title">CÓMO JUGAR</h2>
+        <button class="btn btn-ghost btn-sm" id="btn-howto-back">VOLVER</button>
+      </div>
+      <div id="howto-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: PLAYLIST ============ -->
+  <section id="screen-playlist" class="screen">
+    <div class="hub-wrap">
+      <div class="screen-head">
+        <h2 class="hub-title">HUNTER GAMES <span class="gold">· PLAYLIST</span></h2>
+        <button class="btn btn-ghost btn-sm" id="btn-playlist-back">VOLVER</button>
+      </div>
+      <div id="playlist-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: GAME ============ -->
+  <section id="screen-game" class="screen">
+    <header class="game-hud">
+      <div class="hud-left">
+        <span class="hud-game" id="hud-game">JUEGO I</span>
+        <span class="hud-name" id="hud-name">LA LLUVIA DORADA</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-timer" id="hud-timer">00:00</span>
+        <span class="hud-score" id="hud-score">0</span>
+      </div>
+    </header>
+    <div class="game-zone" id="game-zone"></div>
+    <div class="game-nav">
+      <button class="btn btn-ghost btn-sm" id="btn-game-abandon">RENDIRSE Y ABANDONAR</button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: VICTORY CINEMATIC ============ -->
+  <section id="screen-victory" class="screen">
+    <div class="victory-inner">
+      <div class="vseq" id="vseq-a">EL JUEGO HA TERMINADO.</div>
+      <div class="vseq" id="vseq-b">SEBASTIAN</div>
+      <div class="vseq" id="vseq-c">PARTICIPANTE #017</div>
+      <div class="vseq vseq-final" id="vseq-d">VICTORIA</div>
+      <div class="vseq" id="vseq-e">
+        <p class="v-sub">Has desbloqueado un nuevo diploma.</p>
+        <button class="btn btn-primary btn-lg" id="btn-claim-diploma">🏆 RECLAMAR MI DIPLOMA</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: RESULT (win/lose board) ============ -->
+  <section id="screen-result" class="screen">
+    <div class="hub-wrap">
+      <div id="result-card"></div>
+      <div id="result-table" class="result-table"></div>
+      <div id="result-actions" class="result-actions"></div>
+    </div>
+  </section>
+
+  <!-- ============ DIPLOMA MODAL ============ -->
+  <div id="diploma-modal" class="modal" hidden>
+    <div class="modal-backdrop" id="diploma-close"></div>
+    <div class="modal-panel">
+      <div class="diploma-stage" id="diploma-stage"></div>
+      <div class="diploma-actions">
+        <button class="btn btn-ghost" id="btn-diploma-view">VER DIPLOMA</button>
+        <button class="btn btn-primary" id="btn-diploma-download">DESCARGAR PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FULLSCREEN DIPLOMA VIEW ============ -->
+  <section id="screen-diploma-view" class="screen screen-parchment">
+    <div class="dview-inner">
+      <div id="dview-doc"></div>
+      <div class="dview-actions">
+        <button class="btn btn-primary" id="btn-dview-download">DESCARGAR PDF</button>
+        <button class="btn btn-ghost" id="btn-dview-close">CERRAR</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- toast -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- music player bar -->
+  <div id="music-bar" class="music-bar">
+    <button id="music-toggle" class="music-btn" title="Reproducir / pausar">▶</button>
+    <div class="music-info">
+      <span class="music-name">HUNTER GAMES · BANDA SONORA</span>
+      <span class="music-track" id="music-track">SIN MÚSICA</span>
+    </div>
+    <button id="music-next" class="music-btn" title="Siguiente tema">▸▸</button>
+  </div>
+
+  <noscript>
+    <div class="noscript-box">
+      <h2>Los Juegos requieren JavaScript</h2>
+      <p>Activa JavaScript para participar, Sebastián.</p>
+    </div>
+  </noscript>
+
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/music.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
