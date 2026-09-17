@@ -583,20 +583,8 @@
     var html = '';
     html += '<div class="pl-section">' +
       '<div class="pl-head"><span class="pl-title">Banda Sonora Original</span><span class="pl-mood">generada en tu dispositivo</span></div>' +
-      '<p class="pl-note">Música original creada al momento para ambientar HUNTER GAMES: sin melodías ajenas, hecha para la arena. Reprodúcela desde aquí o con el reproductor inferior.</p>' +
+      '<p class="pl-note">Música original creada al momento para ambientar THE HUNGER GAMES: sin melodías ajenas, hecha para la arena. Reprodúcela desde aquí o con el reproductor inferior.</p>' +
       '<div id="pl-original"></div></div>';
-
-    html += '<div class="pl-section"><div class="pl-head"><span class="pl-title">La Película</span><span class="pl-mood">banda sonora oficial de Los Juegos del Hambre</span></div>' +
-      '<p class="pl-note">Pulsa ▶ en cualquier canción para escucharla al instante en el Concierto. Cada título se busca en YouTube y se reproduce aquí mismo.</p>';
-    PLAYLIST_MOVIE.forEach(function (alb) {
-      html += '<div class="pl-album">' + esc(alb.album) + '</div>';
-      alb.tracks.forEach(function (tr) {
-        html += '<div class="track-row"><button class="tr-play btn-cant" data-q="' + esc(tr.t + ' ' + tr.a) + '" data-lab="' + esc(tr.t + ' · ' + tr.a) + '" title="Escuchar">▶</button><div class="tr-body">' +
-          '<div class="tr-title">' + esc(tr.t) + '</div>' +
-          '<div class="tr-artist">' + esc(tr.a) + '</div></div></div>';
-      });
-    });
-    html += '</div>';
 
     html += '<div class="pl-section"><div class="pl-head"><span class="pl-title">Mis Opciones</span><span class="pl-mood">todas las canciones de Billie Eilish</span></div>' +
       '<p class="pl-note">Discografía completa de Billie Eilish. Pulsa cualquier canción y escúchala al instante en el Concierto: todas, sin excepción.</p>';
@@ -636,15 +624,6 @@
       });
     });
 
-    var cantEls = body.querySelectorAll('.btn-cant');
-    for (var ci = 0; ci < cantEls.length; ci++) {
-      (function (el) {
-        el.addEventListener('click', function () {
-          SFX.init(); SFX.click();
-          YTPlay.play(el.getAttribute('data-q'), el.getAttribute('data-lab'), el);
-        });
-      })(cantEls[ci]);
-    }
     var chipEls = body.querySelectorAll('.billie-chip');
     for (var bi = 0; bi < chipEls.length; bi++) {
       (function (el) {
@@ -763,7 +742,7 @@
       }));
       check('icons', typeof icon('trophy') === 'string' && icon('x-times') === icon('trophy'));
       check('ranks', RANKS.length >= 5 && Store.rank());
-      check('music-data', Music.TRACKS.length === 6 && PLAYLIST_MOVIE.length > 0 && PLAYLIST_BILLIE.length >= 4);
+      check('music-data', Music.TRACKS.length === 6 && PLAYLIST_BILLIE.length >= 4);
       check('ytplay', typeof YTPlay === 'object' && typeof YTPlay.play === 'function');
       check('cert', Store.genCertCode(3).indexOf('CERT-017-') === 0 && Store.genCertCode(3).indexOf('-003-') !== -1);
       check('fmt', Store.fmtTime(90000) === '01:30');

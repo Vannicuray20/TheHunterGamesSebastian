@@ -350,51 +350,8 @@ function icon(name) {
 }
 
 /* ============================================================
-   PLAYLIST · BANDA SONORA DE LA PELÍCULA
-   (Álbumes oficiales. Los títulos pertenecen a sus autores;
-    aquí solo se listan. El audio NO está incluido.)
-   ============================================================ */
-var PLAYLIST_MOVIE = [
-  {
-    album: 'LOS JUEGOS DEL HAMBRE · The Hunger Games (2012)',
-    tracks: [
-      { t: 'Abraham\'s Daughter', a: 'Arcade Fire' },
-      { t: 'Kingdom Come', a: 'The Civil Wars' },
-      { t: 'One Engine', a: 'The Decemberists' },
-      { t: 'Safe & Sound', a: 'Taylor Swift (feat. The Civil Wars)' },
-      { t: 'The Ruler and the Killer', a: 'Kid Cudi' },
-      { t: 'Dark Days', a: 'Punch Brothers' },
-      { t: 'Come Away to the Water', a: 'Maroon 5 (feat. Rozzi Crane)' },
-      { t: 'Eyes Open', a: 'Taylor Swift' }
-    ]
-  },
-  {
-    album: 'EN LLAMAS · Catching Fire (2013)',
-    tracks: [
-      { t: 'Atlas', a: 'Coldplay' },
-      { t: 'Elastic Heart', a: 'Sia (feat. The Weeknd & Diplo)' },
-      { t: 'We Remain', a: 'Christina Aguilera' },
-      { t: 'Forgotten', a: 'The Weeknd' },
-      { t: 'Devil May Cry', a: 'The Weeknd' },
-      { t: 'Lean', a: 'The National' },
-      { t: 'Wishing Well', a: 'Imagine Dragons' }
-    ]
-  },
-  {
-    album: 'SINSAJO · PARTE 1 · Mockingjay Part 1 (2014)',
-    tracks: [
-      { t: 'The Hanging Tree', a: 'James Newton Howard (feat. Jennifer Lawrence)' },
-      { t: 'Yellow Flicker Beat', a: 'Lorde' },
-      { t: 'All My Love', a: 'Major Lazer (feat. Ariana Grande)' },
-      { t: 'Send Them Off!', a: 'Lorde' },
-      { t: 'Dead Air', a: 'CHVRCHES' }
-    ]
-  }
-];
-
-/* ============================================================
    MIS OPCIONES · DISCOGRAFÍA DE BILLIE EILISH
-   (Lista de títulos. El audio NO está incluido.)
+   (Cada canción se reproduce en el Concierto al pulsarla.)
    ============================================================ */
 var PLAYLIST_BILLIE = [
   {
