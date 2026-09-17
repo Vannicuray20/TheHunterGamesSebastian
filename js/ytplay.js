@@ -7,22 +7,18 @@
 var YTPlay = (function () {
   var SEARCH_HOSTS = [
     'https://invidious.f5.si',
+    'https://invidious.tiekoetter.com',
     'https://yewtu.be',
-    'https://inv.nadeko.net',
-    'https://invidious.nerdvpn.de',
-    'https://vid.puffyan.us'
+    'https://invidious.nerdvpn.de'
   ];
   var EMBED_HOSTS = [
-    'https://invidious.f5.si',
-    'https://yewtu.be',
-    'https://inv.nadeko.net',
-    'https://invidious.nerdvpn.de'
+    'https://invidious.tiekoetter.com'
   ];
   var CACHEKEY = 'thg_ytcache';
   var dock = null, iframe = null, loading = null, labelEl = null, extEl = null;
   var currentEl = null, currentQuery = null;
   var list = [], index = -1, active = false, endTimer = null;
-  var embedLoaded = false, embedAttempt = 0;
+  var embedLoaded = false;
   var onChange = null;
 
   function SONGS() {
@@ -156,23 +152,16 @@ var YTPlay = (function () {
     }, wait);
   }
 
-  function loadEmbed(id, tries) {
+  function loadEmbed(id) {
     embedLoaded = false;
-    embedAttempt = 0;
-    function tryHost() {
-      if (!iframe) return;
-      var base = EMBED_HOSTS[embedAttempt];
-      if (!base) { hideLoading(); return; }
-      embedLoaded = false;
-      iframe.src = base + '/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1';
-      setTimeout(function () {
-        if (!embedLoaded && embedAttempt < EMBED_HOSTS.length - 1) {
-          embedAttempt++;
-          tryHost();
-        }
-      }, 7000);
-    }
-    tryHost();
+    iframe.src = EMBED_HOSTS[0] + '/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1';
+    setTimeout(function () {
+      if (!embedLoaded) {
+        hideLoading();
+        labelEl.textContent = 'Reproductor ocupado · abre en YouTube';
+        if (dock) dock.dataset.state = 'error';
+      }
+    }, 9000);
   }
 
   function playVideo(q, lab, el) {
