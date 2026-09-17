@@ -760,6 +760,12 @@ var html = '';
     Store.touchVisit();
     bindAll();
     syncMusicUI();
+    ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
+      document.addEventListener(ev, function once() {
+        document.removeEventListener(ev, once);
+        YTPlay.startPlaylist();
+      }, { once: true });
+    });
     if (/selftest/i.test(location.search || '')) runSelfTest();
   }
 

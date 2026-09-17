@@ -1,22 +1,28 @@
 /* =========================================================
    THE HUNGER GAMES · CONCIERTO EN VIVO — PLAYLIST COMPLETA DE BILLIE EILISH
-   Al iniciar la partida la playlist arranca sola y se reproduce
-   toda, en orden. Cada canción se busca en vivo y se emite
-   dentro del juego. Al terminar una canción, sigue la siguiente.
+   Sin anuncios: cada canción se reproduce en un reproductor
+   libre de publicidad (Invidious). Al terminar una canción,
+   avanza sola a la siguiente hasta pasar por toda la playlist.
    ========================================================= */
 var YTPlay = (function () {
-  var INSTANCES = [
+  var SEARCH_HOSTS = [
     'https://invidious.f5.si',
     'https://yewtu.be',
     'https://inv.nadeko.net',
     'https://invidious.nerdvpn.de',
     'https://vid.puffyan.us'
   ];
+  var EMBED_HOSTS = [
+    'https://invidious.f5.si',
+    'https://yewtu.be',
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de'
+  ];
   var CACHEKEY = 'thg_ytcache';
-  var dock = null, slot = null, loading = null, labelEl = null, extEl = null;
-  var player = null, fallback = null, currentEl = null, currentQuery = null;
-  var list = [], index = -1, active = false;
-  var apiReady = false, apiTimedOut = false;
+  var dock = null, iframe = null, loading = null, labelEl = null, extEl = null;
+  var currentEl = null, currentQuery = null;
+  var list = [], index = -1, active = false, endTimer = null;
+  var embedLoaded = false, embedAttempt = 0;
   var onChange = null;
 
   function SONGS() {
@@ -44,15 +50,21 @@ var YTPlay = (function () {
       '<div class="yt-head"><span class="yt-ico">♪</span>' +
       '<span class="yt-lab" id="yt-dock-label">BILLIE EILISH · PLAYLIST</span>' +
       '<button class="yt-close" id="yt-dock-close" title="Cerrar el concierto">✕</button></div>' +
-      '<div class="yt-stage"><div id="yt-slot"></div>' +
-      '<div class="yt-load" id="yt-loading">Conectando a la playlist…</div></div>' +
+      '<div class="yt-stage"><iframe id="yt-iframe" title="Concierto Billie Eilish" ' +
+      'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>' +
+      '<div class="yt-load" id="yt-loading">Conectando sin anuncios…</div></div>' +
       '<div class="yt-foot"><a id="yt-ext" href="#" target="_blank" rel="noopener">Abrir en YouTube ↗</a></div>';
     document.body.appendChild(dock);
-    slot = document.getElementById('yt-slot');
+    iframe = document.getElementById('yt-iframe');
     loading = document.getElementById('yt-loading');
     labelEl = document.getElementById('yt-dock-label');
     extEl = document.getElementById('yt-ext');
     document.getElementById('yt-dock-close').addEventListener('click', shut);
+    iframe.addEventListener('load', function () { embedLoaded = true; hideLoading(); });
+  }
+
+  function hideLoading() {
+    if (loading) loading.style.display = 'none';
   }
 
   function sync() {
@@ -77,38 +89,11 @@ var YTPlay = (function () {
     if (currentEl) { currentEl.classList.remove('playing'); currentEl = null; }
   }
 
-  function ensureAPI(cb) {
-    if (window.YT && window.YT.Player && apiReady) { cb(true); return; }
-    if (apiTimedOut) { cb(false); return; }
-    cb._stack = true;
-    var boot = false;
-    if (!window.__thgApiCbs) { window.__thgApiCbs = []; boot = true; }
-    window.__thgApiCbs.push(cb);
-    if (!boot) return;
-    window.__thgApiBoot = true;
-    window.onYouTubeIframeAPIReady = function () {
-      apiReady = true;
-      var cbs = window.__thgApiCbs; window.__thgApiCbs = [];
-      cbs.forEach(function (f) { f(true); });
-    };
-    setTimeout(function () {
-      if (!apiReady && window.__thgApiCbs) {
-        apiTimedOut = true;
-        var cbs = window.__thgApiCbs; window.__thgApiCbs = [];
-        cbs.forEach(function (f) { f(false); });
-      }
-    }, 9000);
-    var s = document.createElement('script');
-    s.id = 'thg-yt-api';
-    s.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(s);
-  }
-
   function cacheGet(q) {
     try { var m = JSON.parse(localStorage.getItem(CACHEKEY) || '{}'); return m[q] || null; } catch (e) { return null; }
   }
-  function cacheSet(q, id) {
-    try { var m = JSON.parse(localStorage.getItem(CACHEKEY) || '{}'); m[q] = id; localStorage.setItem(CACHEKEY, JSON.stringify(m)); } catch (e) {}
+  function cacheSet(q, v) {
+    try { var m = JSON.parse(localStorage.getItem(CACHEKEY) || '{}'); m[q] = v; localStorage.setItem(CACHEKEY, JSON.stringify(m)); } catch (e) {}
   }
 
   function pick(list_, q) {
@@ -131,80 +116,63 @@ var YTPlay = (function () {
       if (tokens.length && hits === tokens.length) s += 45;
       var len = it.lengthSeconds;
       if (len && len >= 110) s += 12; else if (len && len < 60) s -= 25;
-      if (s > bs) { bs = s; best = id; }
+      if (s > bs) { bs = s; best = it; }
     }
     return best;
   }
 
   function search(q) {
     var cached = cacheGet(q);
-    if (cached) return Promise.resolve(cached);
-    var list_ = INSTANCES.slice();
+    if (cached) return Promise.resolve({ vid: cached.v, len: cached.l });
+    var hosts = SEARCH_HOSTS.slice();
     function attempt() {
-      if (!list_.length) return Promise.reject(new Error('sin conexión'));
-      var base = list_.shift();
+      if (!hosts.length) return Promise.reject(new Error('sin conexión'));
+      var base = hosts.shift();
       return fetch(base + '/api/v1/search?type=video&q=' + encodeURIComponent(q))
         .then(function (r) { if (!r.ok) throw new Error('http' + r.status); return r.json(); })
         .then(function (arr) {
           if (!arr || !arr.length) throw new Error('vacío');
-          var id = pick(arr, q);
-          if (!id) throw new Error('sin buenos resultados');
-          cacheSet(q, id);
-          return id;
+          var it = pick(arr, q);
+          if (!it) throw new Error('sin buenos resultados');
+          var v = { v: it.videoId, l: it.lengthSeconds || 0 };
+          cacheSet(q, v);
+          return v;
         })
         .catch(function () { return attempt(); });
     }
     return attempt();
   }
 
-  function prepareFallback(url) {
-    if (!fallback) {
-      fallback = document.createElement('iframe');
-      fallback.id = 'yt-iframe';
-      fallback.title = 'Concierto Billie Eilish';
-      fallback.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-      fallback.setAttribute('allowfullscreen', '');
-      slot.appendChild(fallback);
-    }
-    fallback.src = url;
-    fallback.style.display = 'block';
+  function clearEnd() {
+    if (endTimer) { clearTimeout(endTimer); endTimer = null; }
   }
 
-  function playInPlayer(id) {
-    if (!window.YT || !window.YT.Player) return false;
-    if (!player) {
-      player = new YT.Player(slot, {
-        videoId: id,
-        playerVars: {
-          autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1,
-          enablejsapi: 1, origin: location.origin
-        },
-        events: {
-          onReady: function (e) { try { e.target.playVideo(); } catch (err) {} },
-          onStateChange: onState,
-          onError: function () {
-            active = false;
-            if (dock) dock.dataset.state = 'error';
-            sync();
-          }
+  function scheduleEnd(len) {
+    clearEnd();
+    var wait = Math.max((len > 0 ? len : 200) + 2, 15) * 1000;
+    endTimer = setTimeout(function () {
+      endTimer = null;
+      if (active) next();
+    }, wait);
+  }
+
+  function loadEmbed(id, tries) {
+    embedLoaded = false;
+    embedAttempt = 0;
+    function tryHost() {
+      if (!iframe) return;
+      var base = EMBED_HOSTS[embedAttempt];
+      if (!base) { hideLoading(); return; }
+      embedLoaded = false;
+      iframe.src = base + '/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1';
+      setTimeout(function () {
+        if (!embedLoaded && embedAttempt < EMBED_HOSTS.length - 1) {
+          embedAttempt++;
+          tryHost();
         }
-      });
-    } else {
-      player.loadVideoById(id);
+      }, 7000);
     }
-    return true;
-  }
-
-  function onState(e) {
-    var ST = (window.YT && window.YT.PlayerState) || { ENDED: 0, PLAYING: 1 };
-    if (e.data === ST.PLAYING) {
-      active = true;
-      if (loading) loading.style.display = 'none';
-      if (dock) dock.dataset.state = 'play';
-      sync();
-    } else if (e.data === ST.ENDED) {
-      setTimeout(function () { if (active) next(); }, 900);
-    }
+    tryHost();
   }
 
   function playVideo(q, lab, el) {
@@ -213,25 +181,24 @@ var YTPlay = (function () {
     currentQuery = q;
     mark(el);
     active = true;
+    clearEnd();
     dock.style.display = 'flex';
     dock.dataset.state = 'loading';
     labelEl.textContent = (lab || 'Música') + ' ♪';
     extEl.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
     loading.style.display = 'flex';
-    search(q).then(function (id) {
+    search(q).then(function (v) {
       if (currentQuery !== q) return;
-      var ok = playInPlayer(id);
-      if (!ok) {
-        prepareFallback('https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
-          '?autoplay=1&rel=0&modestbranding=1&playsinline=1');
-      }
-      if (dock) dock.dataset.state = 'play';
+      loadEmbed(v.v, 0);
+      scheduleEnd(v.l);
+      dock.dataset.state = 'play';
     }).catch(function () {
       if (currentQuery !== q) return;
       active = false;
-      loading.style.display = 'none';
-      labelEl.textContent = 'No se pudo conectar · abre en YouTube';
-      if (dock) dock.dataset.state = 'error';
+      clearEnd();
+      hideLoading();
+      labelEl.textContent = 'Sin conexión · abre en YouTube';
+      dock.dataset.state = 'error';
       sync();
     });
   }
@@ -256,7 +223,6 @@ var YTPlay = (function () {
   }
 
   function next() {
-    if (active && dock && dock.style.display !== 'flex') return;
     list = SONGS();
     if (!list.length) return;
     playListIndex(index < 0 ? 0 : index + 1);
@@ -264,8 +230,8 @@ var YTPlay = (function () {
 
   function pause() {
     active = false;
-    if (player) { try { player.pauseVideo(); } catch (e) {} }
-    if (fallback) { try { fallback.src = 'about:blank'; fallback.style.display = 'none'; } catch (e) {} }
+    clearEnd();
+    if (iframe) { try { iframe.src = 'about:blank'; } catch (e) {} }
     if (dock) dock.style.display = 'none';
     unmark();
     sync();
@@ -274,8 +240,8 @@ var YTPlay = (function () {
   function shut() {
     currentQuery = null;
     active = false;
-    if (player) { try { player.stopVideo(); } catch (e) {} }
-    if (fallback) { try { fallback.src = 'about:blank'; } catch (e) {} }
+    clearEnd();
+    if (iframe) { try { iframe.src = 'about:blank'; } catch (e) {} }
     unmark();
     if (dock) { dock.style.display = 'none'; dock.dataset.state = 'idle'; }
     sync();
