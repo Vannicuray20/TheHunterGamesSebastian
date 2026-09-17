@@ -155,6 +155,7 @@
       toast(MESSAGES.enter, 3000);
       go('arena');
     }
+    YTPlay.startPlaylist();
   }
 
   function startIdentityFlow() {
@@ -558,36 +559,20 @@
   var playlistFrom = 'home';
 
   function syncMusicUI() {
-    var cur = Music.current();
-    var on = Music.isOn();
+    var on = YTPlay.playing();
     var bar = $('music-bar');
     $('music-toggle').textContent = on ? '❚❚' : '▶';
-    $('music-track').textContent = on ? cur.tracks[cur.idx].name : 'SIN MÚSICA';
+    $('music-track').textContent = on ? (YTPlay.now() || 'BILLIE EILISH') : 'BILLIE EILISH · EN ESPERA';
     bar.classList.toggle('playing', on);
-    for (var i = 0; i < Music.TRACKS.length; i++) {
-      var btn = document.getElementById('orig-play-' + i);
-      var row = document.getElementById('orig-row-' + i);
-      if (!btn || !row) continue;
-      var isCur = on && cur.idx === i;
-      row.classList.toggle('playing', isCur);
-      btn.innerHTML = isCur
-        ? '<span class="eq-dots"><span></span><span></span><span></span><span></span></span>'
-        : '▶';
-    }
   }
 
   function renderPlaylist() {
     var body = $('playlist-body');
     body.innerHTML = '';
 
-    var html = '';
-    html += '<div class="pl-section">' +
-      '<div class="pl-head"><span class="pl-title">Banda Sonora Original</span><span class="pl-mood">generada en tu dispositivo</span></div>' +
-      '<p class="pl-note">Música original creada al momento para ambientar THE HUNGER GAMES: sin melodías ajenas, hecha para la arena. Reprodúcela desde aquí o con el reproductor inferior.</p>' +
-      '<div id="pl-original"></div></div>';
-
+var html = '';
     html += '<div class="pl-section"><div class="pl-head"><span class="pl-title">Mis Opciones</span><span class="pl-mood">todas las canciones de Billie Eilish</span></div>' +
-      '<p class="pl-note">Discografía completa de Billie Eilish. Pulsa cualquier canción y escúchala al instante en el Concierto: todas, sin excepción.</p>';
+      '<p class="pl-note">Playlist completa de Billie Eilish. Al iniciar la partida suena sola y sigue en orden; pulsa cualquier canción para escucharla al instante.</p>';
     PLAYLIST_BILLIE.forEach(function (alb) {
       html += '<div class="pl-album">' + esc(alb.album) + '</div>';
       html += '<div class="billie-chips">';
@@ -599,30 +584,6 @@
     html += '</div>';
 
     body.innerHTML = html;
-
-    Music.TRACKS.forEach(function (t, i) {
-      var row = document.createElement('div');
-      row.className = 'track-row';
-      row.innerHTML =
-        '<button class="tr-play" id="orig-play-' + i + '">▶</button>' +
-        '<div class="tr-body">' +
-        '<div class="tr-title">' + esc(t.name) + '</div>' +
-        '<div class="tr-artist">' + esc(t.mood) + '</div></div>' +
-        '<div class="tr-chip">ORIGINAL</div>';
-      row.id = 'orig-row-' + i;
-      $('pl-original').appendChild(row);
-    });
-
-    Music.TRACKS.forEach(function (t, i) {
-      document.getElementById('orig-play-' + i).addEventListener('click', function () {
-        SFX.init(); SFX.click();
-        YTPlay.shut();
-        var cur = Music.current();
-        if (Music.isOn() && cur.idx === i) { Music.stop(); }
-        else { Music.play(i); }
-        syncMusicUI();
-      });
-    });
 
     var chipEls = body.querySelectorAll('.billie-chip');
     for (var bi = 0; bi < chipEls.length; bi++) {
@@ -670,6 +631,7 @@
       toast(justIntro ? 'La arena te espera, Participante #017.' : MESSAGES.enter, 3200);
       justIntro = false;
       go('arena');
+      YTPlay.startPlaylist();
     });
 
     $('btn-expe-arena').addEventListener('click', function () { SFX.click(); go('expediente'); });
@@ -706,7 +668,7 @@
     fab.addEventListener('click', function () {
       SFX.init();
       SFX.setOn(!SFX.isOn());
-      if (!SFX.isOn() && Music.isOn()) Music.stop();
+      if (!SFX.isOn() && YTPlay.playing()) YTPlay.shut();
       syncIcon();
       syncMusicUI();
       if (SFX.isOn()) SFX.confirm();
@@ -715,17 +677,14 @@
 
     $('music-toggle').addEventListener('click', function () {
       SFX.init(); SFX.click();
-      YTPlay.shut();
-      Music.toggle();
+      if (YTPlay.playing()) { YTPlay.pause(); } else { YTPlay.startPlaylist(); }
       syncMusicUI();
     });
     $('music-next').addEventListener('click', function () {
       SFX.init(); SFX.click();
-      YTPlay.shut();
-      Music.next();
-      syncMusicUI();
+      YTPlay.next();
     });
-    Music.setOnChange(syncMusicUI);
+    YTPlay.setOnChange(syncMusicUI);
   }
 
   /* ------------------------------------------------ autotest */
@@ -742,8 +701,8 @@
       }));
       check('icons', typeof icon('trophy') === 'string' && icon('x-times') === icon('trophy'));
       check('ranks', RANKS.length >= 5 && Store.rank());
-      check('music-data', Music.TRACKS.length === 6 && PLAYLIST_BILLIE.length >= 4);
-      check('ytplay', typeof YTPlay === 'object' && typeof YTPlay.play === 'function');
+      check('music-data', (function () { var n = 0; PLAYLIST_BILLIE.forEach(function (a) { n += a.tracks.length; }); return Music.TRACKS.length === 0 && n >= 50; })());
+      check('ytplay', typeof YTPlay === 'object' && typeof YTPlay.play === 'function' && typeof YTPlay.startPlaylist === 'function');
       check('cert', Store.genCertCode(3).indexOf('CERT-017-') === 0 && Store.genCertCode(3).indexOf('-003-') !== -1);
       check('fmt', Store.fmtTime(90000) === '01:30');
       var img = makeDiploma({ idx: 0, win: true, score: 500, timeMs: 12000 }, { position: 1 });
@@ -800,6 +759,7 @@
     }
     Store.touchVisit();
     bindAll();
+    syncMusicUI();
     if (/selftest/i.test(location.search || '')) runSelfTest();
   }
 
