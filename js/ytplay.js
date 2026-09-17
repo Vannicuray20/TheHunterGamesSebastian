@@ -15,7 +15,7 @@ var YTPlay = (function () {
     'https://invidious.tiekoetter.com'
   ];
   var CACHEKEY = 'thg_ytcache';
-  var dock = null, iframe = null, loading = null, labelEl = null, extEl = null;
+  var dock = null, iframe = null, loading = null, labelEl = null;
   var currentEl = null, currentQuery = null;
   var list = [], index = -1, active = false, endTimer = null;
   var embedLoaded = false;
@@ -41,20 +41,20 @@ var YTPlay = (function () {
     if (dock) return;
     dock = document.createElement('div');
     dock.id = 'yt-dock';
-    dock.dataset.state = 'idle';
+    dock.style.cssText =
+      'position:fixed;left:-10000px;top:0;width:560px;height:320px;' +
+      'transform:none;opacity:0;pointer-events:none;z-index:1;';
     dock.innerHTML =
       '<div class="yt-head"><span class="yt-ico">♪</span>' +
       '<span class="yt-lab" id="yt-dock-label">BILLIE EILISH · PLAYLIST</span>' +
-      '<button class="yt-close" id="yt-dock-close" title="Cerrar el concierto">✕</button></div>' +
+      '<button class="yt-close" id="yt-dock-close" title="Cerrar">✕</button></div>' +
       '<div class="yt-stage"><iframe id="yt-iframe" title="Concierto Billie Eilish" ' +
-      'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>' +
-      '<div class="yt-load" id="yt-loading">Conectando sin anuncios…</div></div>' +
-      '<div class="yt-foot"><a id="yt-ext" href="#" target="_blank" rel="noopener">Abrir en YouTube ↗</a></div>';
+      'allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>' +
+      '<div class="yt-load" id="yt-loading">Conectando…</div></div>';
     document.body.appendChild(dock);
     iframe = document.getElementById('yt-iframe');
     loading = document.getElementById('yt-loading');
     labelEl = document.getElementById('yt-dock-label');
-    extEl = document.getElementById('yt-ext');
     document.getElementById('yt-dock-close').addEventListener('click', shut);
     iframe.addEventListener('load', function () { embedLoaded = true; hideLoading(); });
   }
@@ -173,7 +173,6 @@ var YTPlay = (function () {
     dock.style.display = 'flex';
     dock.dataset.state = 'loading';
     labelEl.textContent = (lab || 'Música') + ' ♪';
-    extEl.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
     loading.style.display = 'flex';
     search(q).then(function (v) {
       if (currentQuery !== q) return;
