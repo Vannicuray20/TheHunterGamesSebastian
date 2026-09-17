@@ -157,9 +157,8 @@ var YTPlay = (function () {
     iframe.src = EMBED_HOSTS[0] + '/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1';
     setTimeout(function () {
       if (!embedLoaded) {
-        hideLoading();
-        labelEl.textContent = 'Reproductor ocupado · abre en YouTube';
-        if (dock) dock.dataset.state = 'error';
+        iframe.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
+          '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
       }
     }, 9000);
   }
