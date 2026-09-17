@@ -15,7 +15,16 @@ var YTPlay = (function () {
     'https://invidious.tiekoetter.com'
   ];
   var CACHEKEY = 'thg_ytcache';
-  var dock = null, iframe = null, loading = null, labelEl = null;
+  var KNOWN_IDS = {
+    'ocean eyes': { v: 'viimfQi_pUw', l: 209 },
+    'bad guy': { v: 'DyDfgMOUjCI', l: 206 },
+    'lovely (con khalid)': { v: 'V1Pl8CzNzCw', l: 201 },
+    "when the party's over": { v: 'pbMwTqkKSps', l: 194 },
+    'everything i wanted': { v: 'EgBJmlPo8Xw', l: 288 },
+    'bury a friend': { v: 'HUHC9tYz8ik', l: 213 },
+    'you should see me in a crown': { v: 'Ah0Ys50CqO8', l: 181 }
+  };
+  var dock = null, iframe = null, nextFrame = null, curFrame = null, loading = null;
   var currentEl = null, currentQuery = null;
   var list = [], index = -1, active = false, endTimer = null;
   var embedLoaded = false;
@@ -26,7 +35,13 @@ var YTPlay = (function () {
     if (window.PLAYLIST_BILLIE) {
       window.PLAYLIST_BILLIE.forEach(function (alb) {
         alb.tracks.forEach(function (t) {
-          out.push({ q: t + ' Billie Eilish', lab: t + ' · Billie Eilish' });
+          var known = KNOWN_IDS[norm(t)] || null;
+          out.push({
+            q: t + ' Billie Eilish',
+            lab: t + ' · Billie Eilish',
+            v: known ? known.v : null,
+            l: known ? known.l : 0
+          });
         });
       });
     }
@@ -42,20 +57,24 @@ var YTPlay = (function () {
     dock = document.createElement('div');
     dock.id = 'yt-dock';
     dock.style.cssText =
-      'position:fixed;left:-10000px;top:0;width:560px;height:320px;' +
+      'position:fixed;left:-10000px;top:0;width:720px;height:405px;' +
       'transform:none;opacity:0;pointer-events:none;z-index:1;';
     dock.innerHTML =
-      '<div class="yt-head"><span class="yt-ico">♪</span>' +
-      '<span class="yt-lab" id="yt-dock-label">BILLIE EILISH · PLAYLIST</span>' +
-      '<button class="yt-close" id="yt-dock-close" title="Cerrar">✕</button></div>' +
-      '<div class="yt-stage"><iframe id="yt-iframe" title="Concierto Billie Eilish" ' +
-      'allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>' +
-      '<div class="yt-load" id="yt-loading">Conectando…</div></div>';
+      '<div class="yt-stage" style="position:relative;width:100%;height:100%;overflow:hidden;">' +
+      '<iframe id="yt-iframe" title="Audio Billie Eilish" allow="autoplay; encrypted-media"' +
+      ' style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>' +
+      '<iframe id="yt-iframe2" title="Siguiente" allow="autoplay; encrypted-media"' +
+      ' style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe>' +
+      '<div class="yt-load" id="yt-loading" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;' +
+      'align-items:center;justify-content:center;">Conectando…</div>' +
+      '<div id="yt-dock-label" style="display:none;"></div>' +
+      '</div>';
     document.body.appendChild(dock);
     iframe = document.getElementById('yt-iframe');
+    nextFrame = document.getElementById('yt-iframe2');
+    curFrame = iframe;
     loading = document.getElementById('yt-loading');
     labelEl = document.getElementById('yt-dock-label');
-    document.getElementById('yt-dock-close').addEventListener('click', shut);
     iframe.addEventListener('load', function () { embedLoaded = true; hideLoading(); });
   }
 
@@ -152,15 +171,62 @@ var YTPlay = (function () {
     }, wait);
   }
 
-  function loadEmbed(id) {
+  function loadEmbed(id, autoplay) {
     embedLoaded = false;
-    iframe.src = EMBED_HOSTS[0] + '/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1';
-    setTimeout(function () {
-      if (!embedLoaded) {
-        iframe.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
-          '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
-      }
-    }, 9000);
+    curFrame = (curFrame === iframe) ? nextFrame : iframe;
+    var url = EMBED_HOSTS[0] + '/embed/' + encodeURIComponent(id) +
+      '?rel=0&playsinline=1' + (autoplay ? '&autoplay=1' : '');
+    var frame = curFrame;
+    frame.src = url;
+    if (autoplay) {
+      setTimeout(function () {
+        if (!embedLoaded) {
+          frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
+            '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+        }
+      }, 9000);
+    }
+  }
+
+  function prefetchNext() {
+    if (!list.length || !active) return;
+    var n = (((index >= 0 ? index : 0) + 1) % list.length);
+    var nx = list[n];
+    if (!nx || !nx.v) return;
+    var alt = (curFrame === iframe) ? nextFrame : iframe;
+    alt.src = EMBED_HOSTS[0] + '/embed/' + encodeURIComponent(nx.v) + '?rel=0&playsinline=1';
+  }
+
+  function firstKnown() {
+    var s = SONGS();
+    for (var i = 0; i < s.length; i++) { if (s[i].v) return i; }
+    return 0;
+  }
+
+  function warmAll() {
+    var s = SONGS();
+    var qs = [];
+    for (var i = 0; i < s.length; i++) {
+      if (!s[i].v && !cacheGet(s[i].q)) qs.push(s[i].q);
+    }
+    var k = 0;
+    function step() {
+      if (k >= qs.length) return;
+      var q = qs[k++];
+      search(q).then(function () { setTimeout(step, 500); }).catch(function () { setTimeout(step, 500); });
+    }
+    setTimeout(step, 800);
+  }
+
+  function prewarm() {
+    build();
+    var s = SONGS();
+    if (!s.length) return;
+    var first = s[firstKnown()];
+    var id = first.v;
+    if (!id) { var c = cacheGet(first.q); id = c ? c.v : null; }
+    if (id) loadEmbed(id, true);
+    warmAll();
   }
 
   function playVideo(q, lab, el) {
@@ -170,22 +236,28 @@ var YTPlay = (function () {
     mark(el);
     active = true;
     clearEnd();
-    dock.style.display = 'flex';
-    dock.dataset.state = 'loading';
     labelEl.textContent = (lab || 'Música') + ' ♪';
     loading.style.display = 'flex';
+    var song = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].q === q) { song = list[i]; break; }
+    }
+    if (song && song.v) {
+      loadEmbed(song.v, true);
+      scheduleEnd(song.l);
+      prefetchNext();
+      return;
+    }
     search(q).then(function (v) {
       if (currentQuery !== q) return;
-      loadEmbed(v.v, 0);
+      loadEmbed(v.v, true);
       scheduleEnd(v.l);
-      dock.dataset.state = 'play';
+      prefetchNext();
     }).catch(function () {
       if (currentQuery !== q) return;
       active = false;
       clearEnd();
       hideLoading();
-      labelEl.textContent = 'Sin conexión · abre en YouTube';
-      dock.dataset.state = 'error';
       sync();
     });
   }
@@ -205,7 +277,7 @@ var YTPlay = (function () {
     list = SONGS();
     if (!list.length) return;
     active = true;
-    var i = index >= 0 ? index : Math.floor(Math.random() * list.length);
+    var i = index >= 0 ? index : firstKnown();
     playListIndex(i);
   }
 
@@ -230,7 +302,7 @@ var YTPlay = (function () {
     clearEnd();
     if (iframe) { try { iframe.src = 'about:blank'; } catch (e) {} }
     unmark();
-    if (dock) { dock.style.display = 'none'; dock.dataset.state = 'idle'; }
+    if (dock) { dock.style.display = 'none'; }
     sync();
   }
 
@@ -240,6 +312,7 @@ var YTPlay = (function () {
     next: next,
     pause: pause,
     shut: shut,
+    prewarm: prewarm,
     on: function () { return !!active; },
     playing: function () { return !!active; },
     now: function () { return (index >= 0 && list[index]) ? list[index].lab : ''; },

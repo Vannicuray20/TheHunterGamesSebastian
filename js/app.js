@@ -760,6 +760,7 @@ var html = '';
     Store.touchVisit();
     bindAll();
     syncMusicUI();
+    if (typeof YTPlay.prewarm === 'function') { YTPlay.prewarm(); }
     ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
       document.addEventListener(ev, function once() {
         document.removeEventListener(ev, once);
